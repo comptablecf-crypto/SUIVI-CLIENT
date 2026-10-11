@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17365d">
+<title>Suivi Documents Clients</title>
+<style>
+:root{--navy:#17365d;--blue:#2563a8;--bg:#f3f6fa;--green:#168454;--orange:#b87510;--red:#b42318;--line:#dbe3ed}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:#1f2937}
+header{background:var(--navy);color:white;padding:18px 16px 14px;position:sticky;top:0;z-index:3;box-shadow:0 2px 8px #0002}
+header h1{font-size:20px;margin:0 0 5px}header p{font-size:12px;margin:0;color:#d7e4f5}
+nav{display:flex;gap:6px;padding:8px;background:white;position:sticky;top:68px;z-index:2;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{flex:1;min-width:max-content;border:0;border-radius:10px;padding:11px 9px;background:#e8eef6;color:var(--navy);font-weight:700;font-size:12px}
+nav button.active{background:var(--blue);color:white}
+main{max-width:760px;margin:auto;padding:14px}
+h2{font-size:19px;color:var(--navy);margin:8px 0 14px}h3{font-size:16px;margin:0 0 8px;color:var(--navy)}
+.card{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 2px 5px #16365d0a}
+label{display:block;font-size:13px;font-weight:700;margin:9px 0 5px}
+input,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;background:white;font-size:15px;color:#111827}
+.row{display:flex;gap:8px}.row>*{flex:1;min-width:0}
+.btn{border:0;border-radius:10px;background:var(--blue);color:white;font-weight:700;padding:12px 14px;font-size:14px;cursor:pointer}
+.btn.secondary{background:#e8eef6;color:var(--navy)}.btn.green{background:var(--green)}.btn.red{background:var(--red)}.btn.small{padding:9px 10px;font-size:12px}.month-nav{display:flex;align-items:end;gap:6px}.month-nav select{flex:1;min-width:0}.month-arrow{flex:0 0 44px;width:44px;height:43px;padding:0;font-size:23px;line-height:1}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.actions .btn{flex:1}
+.muted{color:#64748b;font-size:12px}.progress{height:8px;background:#e8eef6;border-radius:99px;overflow:hidden;margin:8px 0}.progress span{display:block;height:100%;background:var(--green)}
+.doc{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:11px;margin:7px 0;background:white}
+.doc input{width:21px;height:21px;flex:0 0 auto;accent-color:var(--green)}
+.doc span{flex:1;font-size:14px}.doc small{display:block;color:#64748b;font-size:11px;margin-top:3px}
+.hidden{display:none!important}.badge{font-size:12px;font-weight:700;padding:5px 8px;border-radius:99px;background:#fff3d6;color:#8a5a00;white-space:nowrap}.badge.ok{background:#dcfce7;color:#166534}
+.empty{text-align:center;color:#64748b;padding:24px 8px}.missing-item{border-bottom:1px solid var(--line);padding:10px 0}.missing-item:last-child{border-bottom:0}.topline{display:flex;justify-content:space-between;gap:10px;align-items:center}
+footer{text-align:center;color:#64748b;font-size:11px;padding:20px}
+</style>
+</head>
+<body>
+<header><h1>Suivi Documents Clients</h1><p>Gestion simple des documents du cabinet</p></header>
+<nav>
+<button id="tabDashboard" onclick="showTab('dashboard')">Statistiques</button>
+<button id="tabTracking" class="active" onclick="showTab('tracking')">Suivi mensuel</button>
+<button id="tabLegal" onclick="showTab('legal')">Documents juridiques</button>
+<button id="tabClients" onclick="showTab('clients')">Ajouter un client</button>
+</nav>
+<main>
+<section id="dashboard">
+  <h2>Tableau de bord</h2>
+  <div class="card"><div class="row"><div><label for="dashMonth">Mois</label><div class="month-nav"><button class="btn secondary month-arrow" aria-label="Mois précédent" onclick="changeMonth('dashMonth','dashYear',-1,renderDashboard)">‹</button><select id="dashMonth" onchange="renderDashboard()"></select><button class="btn secondary month-arrow" aria-label="Mois suivant" onclick="changeMonth('dashMonth','dashYear',1,renderDashboard)">›</button></div></div><div><label for="dashYear">Année</label><input id="dashYear" type="number" min="2000" max="2100" onchange="renderDashboard()"></div></div></div>
+  <div id="dashboardStats"></div>
+</section>
+<section id="tracking" class="hidden">
+  <h2>Suivi des documents</h2>
+  <div class="card">
+    <div class="row">
+      <div><label for="month">Mois</label><div class="month-nav"><button class="btn secondary month-arrow" aria-label="Mois précédent" onclick="changeMonth('month','year',-1,renderClients)">‹</button><select id="month" onchange="renderClients()"></select><button class="btn secondary month-arrow" aria-label="Mois suivant" onclick="changeMonth('month','year',1,renderClients)">›</button></div></div>
+      <div><label for="year">Année</label><input id="year" type="number" min="2000" max="2100" onchange="renderClients()"></div>
+    </div>
+    <label for="search">Rechercher un client</label><input id="search" placeholder="Nom, ICE ou IF..." oninput="renderClients()">
+    <p class="muted">Cochez les documents reçus. Les modifications sont enregistrées automatiquement sur cet appareil.</p>
+  </div>
+  <div class="card" id="missingDocumentsCard">
+    <div class="topline"><h3>Documents manquants</h3><span id="missingCount" class="badge">0</span></div>
+    <p class="muted">Liste automatique des documents non reçus pour le mois sélectionné.</p>
+    <label for="missingFilter">Afficher</label><select id="missingFilter" onchange="renderMissingDocuments()"><option value="all">Tous les clients avec des documents manquants</option><option value="clients">Un résumé par client</option></select>
+    <div id="missingDocumentsList"></div>
+  </div>
+  <div id="clientList"></div>
+</section>
+<section id="clients" class="hidden">
+  <h2>Ajouter un client</h2>
+  <div class="card">
+    <label for="clientName">Raison sociale / Nom *</label><input id="clientName" placeholder="Nom du client">
+    <div class="row"><div><label for="clientIce">ICE</label><input id="clientIce" placeholder="ICE"></div><div><label for="clientIf">IF</label><input id="clientIf" placeholder="Identifiant fiscal"></div></div>
+    <label for="clientPhone">Téléphone</label><input id="clientPhone" type="tel" placeholder="Téléphone">
+    <div class="actions"><button class="btn green" onclick="addClient()">Enregistrer le client</button></div>
+  </div>
+  <div class="card">
+    <h3>Sauvegarde des données</h3>
+    <p class="muted">Exportez une copie de vos clients et de leur suivi pour ne pas perdre vos données si vous changez de téléphone ou de navigateur.</p>
+    <div class="actions">
+      <button class="btn secondary" onclick="exportBackup()">Exporter la sauvegarde</button>
+      <button class="btn secondary" onclick="document.getElementById('importFile').click()">Importer une sauvegarde</button>
+      <input id="importFile" type="file" accept="application/json,.json" class="hidden" onchange="importBackup(event)">
+    </div>
+  </div>
+  <div class="card">
+    <h3>Importer des clients depuis Excel</h3>
+    <p class="muted">Choisissez un fichier Excel (.xlsx ou .xls). La première ligne doit contenir les titres des colonnes : Raison sociale (ou Nom), ICE, IF et Téléphone. Les clients déjà présents avec le même ICE ou le même nom seront ignorés.</p>
+    <button class="btn secondary" onclick="document.getElementById('excelFile').click()">Choisir un fichier Excel</button>
+    <input id="excelFile" type="file" accept=".xlsx,.xls,.csv" class="hidden" onchange="importExcel(event)">
+    <p class="muted">Vous pouvez aussi télécharger un modèle CSV compatible avec Excel.</p>
+    <button class="btn secondary small" onclick="downloadTemplate()">Télécharger le modèle Excel (CSV)</button>
+  </div>
+  <div class="card">
+    <h3>Recherche avancée des clients</h3>
+    <label for="manageSearch">Nom, ICE, IF ou téléphone</label><input id="manageSearch" placeholder="Saisir un nom, ICE, IF ou téléphone..." oninput="renderManageClients()">
+    <label for="manageFilter">Filtrer les dossiers</label><select id="manageFilter" onchange="renderManageClients()"><option value="all">Tous les clients</option><option value="monthly">Documents mensuels incomplets (mois sélectionné)</option><option value="legal">Documents juridiques incomplets</option><option value="complete">Dossier mensuel et juridique complet</option></select>
+    <p class="muted">Les boutons Modifier et Supprimer restent disponibles pour chaque résultat.</p>
+  </div>
+  <div id="manageClients"></div>
+</section>
+<section id="documents" class="hidden">
+  <div class="topline"><button class="btn secondary small" onclick="showTab('tracking')">← Retour</button><span id="docPeriod" class="muted"></span></div>
+  <h2 id="docClientTitle"></h2>
+  <div class="card">
+    <div class="row">
+      <div><label for="docMonth">Mois</label><div class="month-nav"><button class="btn secondary month-arrow" aria-label="Mois précédent" onclick="changeMonth('docMonth','docYear',-1,syncPeriod)">‹</button><select id="docMonth" onchange="syncPeriod()"></select><button class="btn secondary month-arrow" aria-label="Mois suivant" onclick="changeMonth('docMonth','docYear',1,syncPeriod)">›</button></div></div>
+      <div><label for="docYear">Année</label><input id="docYear" type="number" min="2000" max="2100" onchange="syncPeriod()"></div>
+    </div>
+  </div>
+  <div class="card"><h3>Documents mensuels</h3><div id="monthlyDocs"></div></div>
+</section>
+<section id="legal" class="hidden">
+  <div class="topline"><span class="muted">Documents permanents — sans mois ni année</span></div>
+  <h2>Documents juridiques</h2>
+  <label for="legalClientSelect">Choisir un client</label><select id="legalClientSelect" onchange="selectLegalClient(this.value)"><option value="">-- Sélectionner un client --</option></select>
+  <label for="legalSearch">Ou rechercher un client</label><input id="legalSearch" placeholder="Nom, ICE ou IF..." oninput="renderLegalClients()">
+  <div id="legalClientList"></div>
+  <div id="legalDetails" class="hidden">
+    <div class="topline"><button class="btn secondary small" onclick="closeLegalDetails()">← Liste des clients</button><span id="legalClientMeta" class="muted"></span></div>
+    <h2 id="legalClientTitle"></h2>
+    <div class="card"><p class="muted">Cochez une fois les documents juridiques reçus. Leur statut ne change pas selon le mois.</p><div id="legalDocs"></div></div>
+  </div>
+</section>
+</main>
+<footer>Suivi Documents Clients · Version locale pour Android</footer>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MONTHLY=['Factures d’achat','Factures de vente','Relevés bancaires','État CNSS','Autres documents','Tableau d’amortissement','Convention fournisseurs','Attestation de la RAS'];
+const LEGAL=['Statuts','Contrat de bail','CIN du gérant','CIN des associés','Autorisation','RC'];
+const KEY='suiviDocumentsClients_v1';
+let data={clients:[],checks:{}},selectedId=null;
+const now=new Date();
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'{}');data={clients:Array.isArray(x.clients)?x.clients:[],checks:x.checks||{}}}catch(e){data={clients:[],checks:{}}}}
+function save(){localStorage.setItem(KEY,JSON.stringify(data));}
+function initSelect(id){const s=document.getElementById(id);s.innerHTML=MONTHS.map((m,i)=>`<option value="${i}">${m}</option>`).join('');s.value=now.getMonth()}
+function changeMonth(monthId,yearId,delta,callback){const m=document.getElementById(monthId),y=document.getElementById(yearId);let month=Number(m.value)+delta,year=Number(y.value);if(month<0){month=11;year--}else if(month>11){month=0;year++}m.value=String(month);y.value=year;callback()}
+function period(){return `${document.getElementById('year').value}-${String(Number(document.getElementById('month').value)+1).padStart(2,'0')}`}
+function docPeriod(){return `${document.getElementById('docYear').value}-${String(Number(document.getElementById('docMonth').value)+1).padStart(2,'0')}`}
+function checkKey(id,period,kind,doc){return [id,period,kind,doc].join('|')}
+function received(id,p,k,d){return !!data.checks[checkKey(id,p,k,d)]}
+function setReceived(id,p,k,d,v){data.checks[checkKey(id,p,k,d)]=v;save();renderClients();renderMissingDocuments();renderDocLists();if(k==='J')renderLegalDocs();renderManageClients()}
+function showTab(which){['dashboard','tracking','clients','documents','legal'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==which));document.getElementById('tabDashboard').classList.toggle('active',which==='dashboard');document.getElementById('tabTracking').classList.toggle('active',which==='tracking'||which==='documents');document.getElementById('tabClients').classList.toggle('active',which==='clients');document.getElementById('tabLegal').classList.toggle('active',which==='legal');if(which==='dashboard')renderDashboard();if(which==='tracking')renderClients();if(which==='clients')renderManageClients();if(which==='legal')renderLegalClients()}
+function addClient(){const name=document.getElementById('clientName').value.trim();if(!name){alert('Veuillez saisir le nom du client.');return}data.clients.push({id:Date.now().toString()+Math.random().toString(16).slice(2),name,ice:document.getElementById('clientIce').value.trim(),tax:document.getElementById('clientIf').value.trim(),phone:document.getElementById('clientPhone').value.trim()});save();resetClientForm();renderManageClients();renderClients();alert('Client enregistré.')}
+function editClient(id){
+ const c=data.clients.find(x=>x.id===id);if(!c)return;
+ document.getElementById('clientName').value=c.name||'';
+ document.getElementById('clientIce').value=c.ice||'';
+ document.getElementById('clientIf').value=c.tax||'';
+ document.getElementById('clientPhone').value=c.phone||'';
+ const saveBtn=document.querySelector('#clients .btn.green');
+ saveBtn.textContent='Enregistrer les modifications';
+ saveBtn.onclick=()=>{
+  const name=document.getElementById('clientName').value.trim();
+  if(!name){alert('Veuillez saisir le nom du client.');return}
+  c.name=name;c.ice=document.getElementById('clientIce').value.trim();c.tax=document.getElementById('clientIf').value.trim();c.phone=document.getElementById('clientPhone').value.trim();
+  save();resetClientForm();renderManageClients();renderClients();alert('Client modifié.');
+ };
+ showTab('clients');
+ document.getElementById('clientName').focus();
+}
+function resetClientForm(){
+ ['clientName','clientIce','clientIf','clientPhone'].forEach(id=>document.getElementById(id).value='');
+ const saveBtn=document.querySelector('#clients .btn.green');
+ saveBtn.textContent='Enregistrer le client';saveBtn.onclick=addClient;
+}
+function renderClients(){const host=document.getElementById('clientList');if(!host)return;const q=(document.getElementById('search').value||'').toLowerCase();const p=period();const list=data.clients.filter(c=>(c.name+' '+c.ice+' '+c.tax+' '+(c.phone||'')).toLowerCase().includes(q));if(!list.length){host.innerHTML=`<div class="card empty">${data.clients.length?'Aucun résultat.':'Aucun client pour le moment. Utilisez « Ajouter un client ».'}</div>`;return}
+host.innerHTML=list.map(c=>{const count=MONTHLY.filter(d=>received(c.id,p,'M',d)).length;return `<div class="card"><div class="topline"><div><h3>${esc(c.name)}</h3><div class="muted">ICE : ${esc(c.ice||'—')} · IF : ${esc(c.tax||'—')}</div></div><span class="badge ${count===MONTHLY.length?'ok':''}">${count}/${MONTHLY.length}</span></div><div class="progress"><span style="width:${count/MONTHLY.length*100}%"></span></div><div class="muted">${count===MONTHLY.length?'Tous les documents mensuels sont reçus':'Documents mensuels reçus'}</div><div class="actions"><button class="btn" onclick="openDocs('${c.id}')">Suivi des documents mensuels</button></div></div>`}).join('');renderMissingDocuments()}
+function openDocs(id){selectedId=id;const c=data.clients.find(x=>x.id===id);if(!c)return;document.getElementById('docClientTitle').textContent=c.name;document.getElementById('docMonth').value=document.getElementById('month').value;document.getElementById('docYear').value=document.getElementById('year').value;showTab('documents');syncPeriod()}
+function syncPeriod(){const m=document.getElementById('docMonth').value,y=document.getElementById('docYear').value;document.getElementById('docPeriod').textContent=MONTHS[Number(m)]+' '+y;renderDocLists()}
+function renderDocLists(){if(!selectedId)return;const p=docPeriod();document.getElementById('monthlyDocs').innerHTML=MONTHLY.map(d=>`<label class="doc"><input type="checkbox" ${received(selectedId,p,'M',d)?'checked':''} onchange='setReceived("${selectedId}","${p}","M",${JSON.stringify(d)},this.checked)' ><span>${esc(d)}<small>${received(selectedId,p,'M',d)?'Document reçu':'Document non reçu'}</small></span></label>`).join('')}
+function renderMissingDocuments(){const host=document.getElementById('missingDocumentsList');if(!host)return;const countEl=document.getElementById('missingCount');const p=period(),label=MONTHS[Number(document.getElementById('month').value)]+' '+document.getElementById('year').value;const rows=data.clients.map(c=>({c,missing:MONTHLY.filter(d=>!received(c.id,p,'M',d))})).filter(x=>x.missing.length);const total=rows.reduce((n,r)=>n+r.missing.length,0);countEl.textContent=total+' document(s)';if(!rows.length){host.innerHTML='<div class="empty">Aucun document mensuel manquant pour '+esc(label)+'.</div>';return}const mode=document.getElementById('missingFilter')?.value||'all';host.innerHTML=rows.map(r=>`<div class="missing-item"><div class="topline"><strong>${esc(r.c.name)}</strong><span class="badge">${r.missing.length} manquant(s)</span></div>${mode==='clients'?'<div class="muted">ICE : '+esc(r.c.ice||'—')+' · IF : '+esc(r.c.tax||'—')+'</div>':'<div class="muted">À recevoir : '+r.missing.map(esc).join(' · ')+'</div>'}<div class="actions"><button class="btn secondary small" onclick="openDocs('${r.c.id}')">Ouvrir le dossier</button></div></div>`).join('')}
+function renderLegalClients(){
+ const sel=document.getElementById('legalClientSelect');if(!sel)return;
+ const current=sel.value;
+ sel.innerHTML='<option value="">-- Sélectionner un client --</option>'+data.clients.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('');
+ if(data.clients.some(c=>c.id===current))sel.value=current;
+ const host=document.getElementById('legalClientList');
+ const q=(document.getElementById('legalSearch').value||'').toLowerCase();
+ const list=data.clients.filter(c=>(String(c.name||'')+' '+String(c.ice||'')+' '+String(c.tax||'')).toLowerCase().includes(q));
+ if(!list.length){host.innerHTML=`<div class="card empty">${data.clients.length?'Aucun résultat.':'Aucun client enregistré. Ajoutez d’abord un client dans « Ajouter un client ».'}</div>`;return}
+ host.innerHTML=list.map(c=>{const n=LEGAL.filter(d=>received(c.id,'PERMANENT','J',d)).length;return `<div class="card"><div class="topline"><div><h3>${esc(c.name)}</h3><div class="muted">ICE : ${esc(c.ice||'—')} · IF : ${esc(c.tax||'—')}</div></div><span class="badge ${n===LEGAL.length?'ok':''}">${n}/${LEGAL.length}</span></div><div class="actions"><button class="btn" onclick="openLegal('${c.id}')">Gérer les documents juridiques</button></div></div>`}).join('');
+}
+function selectLegalClient(id){if(id)openLegal(id);else{document.getElementById('legalDetails').classList.add('hidden');document.getElementById('legalClientList').classList.remove('hidden')}}
+function openLegal(id){const c=data.clients.find(x=>x.id===id);if(!c)return;selectedId=id;document.getElementById('legalClientSelect').value=id;document.getElementById('legalClientList').classList.add('hidden');document.getElementById('legalDetails').classList.remove('hidden');document.getElementById('legalClientTitle').textContent=c.name;document.getElementById('legalClientMeta').textContent='ICE : '+(c.ice||'—')+' · IF : '+(c.tax||'—');renderLegalDocs()}
+function closeLegalDetails(){document.getElementById('legalDetails').classList.add('hidden');document.getElementById('legalClientList').classList.remove('hidden');document.getElementById('legalClientSelect').value='';renderLegalClients()}
+function renderLegalDocs(){const host=document.getElementById('legalDocs');if(!host||!selectedId)return;host.innerHTML=LEGAL.map(d=>`<label class="doc"><input type="checkbox" ${received(selectedId,'PERMANENT','J',d)?'checked':''} onchange='setReceived("${selectedId}","PERMANENT","J",${JSON.stringify(d)},this.checked)'><span>${esc(d)}<small>${received(selectedId,'PERMANENT','J',d)?'Document reçu':'Document non reçu'}</small></span></label>`).join('')}
+function renderManageClients(){const host=document.getElementById('manageClients');if(!host)return;if(!data.clients.length){host.innerHTML='<div class="card empty">Aucun client enregistré.</div>';return}const q=(document.getElementById('manageSearch')?.value||'').toLowerCase().trim(),filter=document.getElementById('manageFilter')?.value||'all',p=period();let list=data.clients.filter(c=>(String(c.name||'')+' '+String(c.ice||'')+' '+String(c.tax||'')+' '+String(c.phone||'')).toLowerCase().includes(q));list=list.filter(c=>{const m=MONTHLY.filter(d=>received(c.id,p,'M',d)).length,j=LEGAL.filter(d=>received(c.id,'PERMANENT','J',d)).length;if(filter==='monthly')return m<MONTHLY.length;if(filter==='legal')return j<LEGAL.length;if(filter==='complete')return m===MONTHLY.length&&j===LEGAL.length;return true});if(!list.length){host.innerHTML='<div class="card empty">Aucun client ne correspond à la recherche ou au filtre.</div>';return}host.innerHTML='<h3>Résultats : '+list.length+' client(s)</h3>'+list.map(c=>{const m=MONTHLY.filter(d=>received(c.id,p,'M',d)).length,j=LEGAL.filter(d=>received(c.id,'PERMANENT','J',d)).length;return `<div class="card"><div class="topline"><div><strong>${esc(c.name)}</strong><div class="muted">ICE : ${esc(c.ice||'—')} · IF : ${esc(c.tax||'—')} · Tél. : ${esc(c.phone||'—')}</div><div class="muted">Mensuel : ${m}/8 · Juridique : ${j}/6</div></div></div><div class="actions"><button class="btn secondary small" onclick="editClient('${c.id}')">Modifier</button><button class="btn red small" onclick="deleteClient('${c.id}')">Supprimer</button></div></div>`}).join('')}
+function deleteClient(id){if(!confirm('Supprimer ce client et ses données de suivi ?'))return;data.clients=data.clients.filter(c=>c.id!==id);Object.keys(data.checks).forEach(k=>{if(k.startsWith(id+'|'))delete data.checks[k]});save();renderManageClients();renderClients();renderLegalClients();renderDashboard();renderMissingDocuments()}
+function exportBackup(){const stamp=new Date().toISOString().slice(0,10);const blob=new Blob([JSON.stringify({app:'SuiviDocumentsClients',version:1,exportedAt:new Date().toISOString(),...data},null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='sauvegarde-suivi-clients-'+stamp+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function importBackup(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.clients)||!d.checks||typeof d.checks!=='object')throw new Error('Structure invalide');if(!confirm('Remplacer toutes les données actuelles par cette sauvegarde ? Exportez une copie actuelle avant de continuer si nécessaire.')){e.target.value='';return}data={clients:d.clients,checks:d.checks};save();renderManageClients();renderClients();renderLegalClients();renderDashboard();renderMissingDocuments();alert('Sauvegarde restaurée. Clients : '+data.clients.length+'.')}catch(_){alert('Fichier de sauvegarde invalide ou incompatible. Aucune donnée n’a été modifiée.')}e.target.value=''};r.readAsText(f)}
+function renderDashboard(){
+ const monthEl=document.getElementById('dashMonth'),yearEl=document.getElementById('dashYear');if(!monthEl||!yearEl)return;
+ const p=`${yearEl.value}-${String(Number(monthEl.value)+1).padStart(2,'0')}`;
+ const totalMonthly=data.clients.length*MONTHLY.length;
+ let got=0,legalGot=0,legalTotal=data.clients.length*LEGAL.length,completeMonthly=0,completeLegal=0;
+ const rows=data.clients.map(c=>{const n=MONTHLY.filter(d=>received(c.id,p,'M',d)).length;const j=LEGAL.filter(d=>received(c.id,'PERMANENT','J',d)).length;got+=n;legalGot+=j;if(n===MONTHLY.length)completeMonthly++;if(j===LEGAL.length)completeLegal++;return {name:c.name,m:n,j}});
+ const pct=totalMonthly?Math.round(got/totalMonthly*100):0,lpct=legalTotal?Math.round(legalGot/legalTotal*100):0;
+ const stat=(label,value,sub='')=>`<div class="card"><div class="muted">${label}</div><div style="font-size:26px;font-weight:700;color:var(--navy);margin:5px 0">${value}</div><div class="muted">${sub}</div></div>`;
+ const host=document.getElementById('dashboardStats');
+ host.innerHTML=`<div class="row">${stat('Clients enregistrés',data.clients.length,'Tous les clients')}${stat('Documents mensuels reçus',`${got}/${totalMonthly}`,`${pct}% reçus pour ${MONTHS[Number(monthEl.value)]} ${yearEl.value}`)}</div><div class="row">${stat('Dossiers mensuels complets',`${completeMonthly}/${data.clients.length}`,'8 documents reçus')}${stat('Documents juridiques reçus',`${legalGot}/${legalTotal}`,`${lpct}% reçus au total`)}</div><div class="card"><h3>Progression mensuelle — ${MONTHS[Number(monthEl.value)]} ${yearEl.value}</h3><div class="progress"><span style="width:${pct}%"></span></div><p class="muted">${totalMonthly-got} document(s) mensuel(s) manquant(s).</p></div><div class="card"><h3>État par client</h3>${rows.length?rows.map(r=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div class="topline"><strong>${esc(r.name)}</strong><span class="badge ${r.m===MONTHLY.length?'ok':''}">${r.m}/8 mensuels</span></div><div class="progress"><span style="width:${r.m/8*100}%"></span></div><div class="muted">Documents juridiques : ${r.j}/6</div></div>`).join(''):'<div class="empty">Aucun client enregistré.</div>'}</div>`;
+}
+function normHeader(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'')}
+function importExcel(e){const f=e.target.files&&e.target.files[0];if(!f)return;if(!window.XLSX){alert('La bibliothèque Excel ne se charge pas. Vérifiez la connexion Internet puis réessayez.');e.target.value='';return}const reader=new FileReader();reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{defval:'',raw:false});if(!rows.length)throw new Error('Le fichier ne contient aucune ligne.');let added=0,skipped=0;rows.forEach(row=>{const mapped={};Object.keys(row).forEach(k=>mapped[normHeader(k)]=String(row[k]||'').trim());const name=mapped.raisonsociale||mapped.nom||mapped.client||mapped.entreprise||mapped.raisonsocial||'';if(!name){skipped++;return}const ice=mapped.ice||mapped.identifiantcommunentreprise||'';const tax=mapped.if||mapped.identifiantfiscal||mapped.identifiantfiscalif||'';const phone=mapped.telephone||mapped.tel||mapped.gsm||mapped.portable||'';const exists=data.clients.some(c=>(ice&&String(c.ice||'').trim()===ice)||String(c.name||'').trim().toLowerCase()===name.toLowerCase());if(exists){skipped++;return}data.clients.push({id:Date.now().toString()+Math.random().toString(16).slice(2),name,ice,tax,phone});added++});save();renderManageClients();renderClients();renderLegalClients();renderDashboard();alert(`Import terminé.\nClients ajoutés : ${added}\nLignes ignorées (doublons ou nom absent) : ${skipped}`)}catch(err){alert('Impossible de lire ce fichier Excel. Vérifiez les titres de colonnes et le format. '+(err.message||''))}e.target.value=''};reader.readAsArrayBuffer(f)}
+function downloadTemplate(){const csv='Raison sociale,ICE,IF,Téléphone\r\nExemple SARL,001234567000012,12345678,0612345678\r\n';const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='modele_import_clients.csv';a.click();URL.revokeObjectURL(a.href)}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+initSelect('month');initSelect('docMonth');initSelect('dashMonth');document.getElementById('year').value=now.getFullYear();document.getElementById('docYear').value=now.getFullYear();document.getElementById('dashYear').value=now.getFullYear();document.getElementById('month').addEventListener('change',renderClients);document.getElementById('year').addEventListener('change',()=>{renderClients();renderManageClients()});document.getElementById('month').addEventListener('change',()=>{renderClients();renderManageClients()});load();renderClients();renderDashboard();renderManageClients();
+</script>
+</body></html>
