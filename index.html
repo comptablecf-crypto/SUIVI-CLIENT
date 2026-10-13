@@ -140,7 +140,7 @@ footer{text-align:center;color:#718391;font-size:11px;padding:22px}
       <div><label for="docYear">Année</label><input id="docYear" type="number" min="2000" max="2100" onchange="syncPeriod()"></div>
     </div>
   </div>
-  <div class="card"><h3>Documents mensuels</h3><div id="monthlyDocs"></div></div>
+  <div class="card"><div class="topline"><h3>Documents mensuels</h3><button type="button" id="toggleMonthlyAll" class="btn green small" onclick="toggleAllMonthly()">Tout reçu ✓</button></div><p class="muted">Appuyez pour tout cocher, puis une seconde fois pour tout décocher.</p><div id="monthlyDocs"></div></div>
 </section>
 <section id="legal" class="hidden">
   <div class="topline"><span class="muted">Documents permanents — sans mois ni année</span></div>
@@ -151,7 +151,7 @@ footer{text-align:center;color:#718391;font-size:11px;padding:22px}
   <div id="legalDetails" class="hidden">
     <div class="topline"><button class="btn secondary small" onclick="closeLegalDetails()">← Liste des clients</button><span id="legalClientMeta" class="muted"></span></div>
     <h2 id="legalClientTitle"></h2>
-    <div class="card"><p class="muted">Cochez une fois les documents juridiques reçus. Leur statut ne change pas selon le mois.</p><div id="legalDocs"></div></div>
+    <div class="card"><div class="topline"><h3>Documents juridiques</h3><button type="button" id="toggleLegalAll" class="btn green small" onclick="toggleAllLegal()">Tout reçu ✓</button></div><p class="muted">Appuyez pour tout cocher, puis une seconde fois pour tout décocher. Statut permanent.</p><div id="legalDocs"></div></div>
   </div>
 </section>
 </main>
@@ -201,6 +201,8 @@ host.innerHTML=list.map(c=>{const count=MONTHLY.filter(d=>received(c.id,p,'M',d)
 function openDocs(id){selectedId=id;const c=data.clients.find(x=>x.id===id);if(!c)return;document.getElementById('docClientTitle').textContent=c.name;document.getElementById('docMonth').value=document.getElementById('month').value;document.getElementById('docYear').value=document.getElementById('year').value;showTab('documents');syncPeriod()}
 function syncPeriod(){const m=document.getElementById('docMonth').value,y=document.getElementById('docYear').value;document.getElementById('docPeriod').textContent=MONTHS[Number(m)]+' '+y;renderDocLists()}
 function renderDocLists(){if(!selectedId)return;const p=docPeriod();document.getElementById('monthlyDocs').innerHTML=MONTHLY.map(d=>`<label class="doc"><input type="checkbox" ${received(selectedId,p,'M',d)?'checked':''} onchange='setReceived("${selectedId}","${p}","M",${JSON.stringify(d)},this.checked)' ><span>${esc(d)}<small>${received(selectedId,p,'M',d)?'Document reçu':'Document non reçu'}</small></span></label>`).join('')}
+function toggleAllMonthly(){if(!selectedId)return;const p=docPeriod();const allReceived=MONTHLY.every(d=>received(selectedId,p,'M',d));const next=!allReceived;MONTHLY.forEach(d=>setReceived(selectedId,p,'M',d,next));renderDocLists();renderClients();renderDashboard();renderMissingDocuments();const btn=document.getElementById('toggleMonthlyAll');if(btn)btn.textContent=next?'Tout décocher ✓':'Tout reçu ✓'}
+function toggleAllLegal(){if(!selectedId)return;const allReceived=LEGAL.every(d=>received(selectedId,'PERMANENT','J',d));const next=!allReceived;LEGAL.forEach(d=>setReceived(selectedId,'PERMANENT','J',d,next));renderLegalDocs();renderLegalClients();renderDashboard();renderManageClients();const btn=document.getElementById('toggleLegalAll');if(btn)btn.textContent=next?'Tout décocher ✓':'Tout reçu ✓'}
 function renderMissingDocuments(){const host=document.getElementById('missingDocumentsList');if(!host)return;const countEl=document.getElementById('missingCount');const mm=document.getElementById('missing');const useMissing=mm&&!mm.classList.contains('hidden');const p=useMissing?`${document.getElementById('missingYear').value}-${String(Number(document.getElementById('missingMonth').value)+1).padStart(2,'0')}`:period();const label=useMissing?MONTHS[Number(document.getElementById('missingMonth').value)]+' '+document.getElementById('missingYear').value:MONTHS[Number(document.getElementById('month').value)]+' '+document.getElementById('year').value;const rows=data.clients.map(c=>({c,missing:MONTHLY.filter(d=>!received(c.id,p,'M',d))})).filter(x=>x.missing.length);const total=rows.reduce((n,r)=>n+r.missing.length,0);countEl.textContent=total+' document(s)';if(!rows.length){host.innerHTML='<div class="empty">Aucun document mensuel manquant pour '+esc(label)+'.</div>';return}const mode=document.getElementById('missingFilter')?.value||'all';host.innerHTML=rows.map(r=>`<div class="missing-item"><div class="topline"><strong>${esc(r.c.name)}</strong><span class="badge">${r.missing.length} manquant(s)</span></div>${mode==='clients'?'<div class="muted">ICE : '+esc(r.c.ice||'—')+' · IF : '+esc(r.c.tax||'—')+'</div>':'<div class="muted">À recevoir : '+r.missing.map(esc).join(' · ')+'</div>'}<div class="actions"><button class="btn secondary small" onclick="openDocs('${r.c.id}')">Ouvrir le dossier</button></div></div>`).join('')}
 function renderLegalClients(){
  const sel=document.getElementById('legalClientSelect');if(!sel)return;
